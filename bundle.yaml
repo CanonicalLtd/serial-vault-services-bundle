@@ -1,0 +1,120 @@
+series: xenial
+applications: 
+  postgresql: 
+    charm: "cs:postgresql"
+    num_units: 1
+    annotations: 
+      "gui-x": 1468
+      "gui-y": 400
+    to: 
+      - "0"
+  "serial-vault": 
+    charm: "cs:~jamesj/serial-vault"
+    num_units: 1
+    annotations: 
+      "gui-x": 1160
+      "gui-y": 140
+    to: 
+      - "1"
+  "serial-vault-admin": 
+    charm: "cs:~jamesj/serial-vault"
+    num_units: 1
+    options: 
+      service_type: admin
+    annotations: 
+      "gui-x": 1160
+      "gui-y": 400
+    to: 
+      - "2"
+  "serial-vault-user": 
+    charm: "cs:~jamesj/serial-vault"
+    num_units: 1
+    options: 
+      service_type: system-user
+    annotations: 
+      "gui-x": 1160
+      "gui-y": 660
+    to: 
+      - "3"
+  haproxy: 
+    charm: "cs:haproxy"
+    num_units: 1
+    options:
+      enable_monitoring: false
+      services: |
+        - service_name: serial-vault
+          service_host: 0.0.0.0
+          service_port: 8080
+          service_options:
+            - mode http
+            - option httplog
+            - balance leastconn
+            - timeout server 50000
+            - option httpchk GET /v1/version HTTP/1.1\r\nHost:\ serial-vault
+          server_options:
+            - check inter 2000
+            - rise 2
+            - fall 5
+            - maxconn 50
+        - service_name: serial-vault-admin
+          service_host: 0.0.0.0
+          service_port: 8081
+          service_options:
+            - mode http
+            - option httplog
+            - balance leastconn
+            - timeout server 50000
+            - option httpchk GET /v1/version HTTP/1.1\r\nHost:\ serial-vault-admin
+          server_options:
+            - check inter 2000
+            - rise 2
+            - fall 5
+            - maxconn 50
+        - service_name: serial-vault-user
+          service_host: 0.0.0.0
+          service_port: 8082
+          service_options:
+            - mode http
+            - option httplog
+            - balance leastconn
+            - timeout server 50000
+            - option httpchk GET /v1/version HTTP/1.1\r\nHost:\ serial-vault-user
+          server_options:
+            - check inter 2000
+            - rise 2
+            - fall 5
+            - maxconn 50
+    annotations: 
+      "gui-x": 857
+      "gui-y": 400
+    to: 
+      - "4"
+relations: 
+  - - "serial-vault-admin:database"
+    - "postgresql:db-admin"
+  - - "serial-vault:database"
+    - "postgresql:db-admin"
+  - - "serial-vault-user:database"
+    - "postgresql:db-admin"
+  - - "haproxy:reverseproxy"
+    - "serial-vault-admin:website"
+  - - "haproxy:reverseproxy"
+    - "serial-vault:website"
+  - - "haproxy:reverseproxy"
+    - "serial-vault-user:website"
+machines: 
+  "0": 
+    series: xenial
+    constraints: "arch=amd64 cpu-cores=1 cpu-power=100 mem=1740 root-disk=8192"
+  "1": 
+    series: xenial
+    constraints: "arch=amd64 cpu-cores=1 cpu-power=100 mem=1740 root-disk=8192"
+  "2": 
+    series: xenial
+    constraints: "arch=amd64 cpu-cores=1 cpu-power=100 mem=1740 root-disk=8192"
+  "3": 
+    series: xenial
+    constraints: "arch=amd64 cpu-cores=1 cpu-power=100 mem=1740 root-disk=8192"
+  "4": 
+    series: xenial
+    constraints: "arch=amd64 cpu-cores=1 cpu-power=100 mem=1740 root-disk=8192"
